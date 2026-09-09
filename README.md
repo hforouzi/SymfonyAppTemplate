@@ -1,6 +1,6 @@
 # Symfony App Template
 
-Reusable Symfony 7.2 browser-admin template with database-backed users, roles, permissions, dynamic menus, settings, Twig admin layouts, localization, Messenger, HttpClient, Mailer baseline, AssetMapper, Stimulus, PHPUnit, PHPStan, and coding-standard tooling.
+Reusable Symfony browser-admin template with database-backed users, roles, permissions, dynamic menus, settings, Twig admin layouts, localization, Messenger, HttpClient, Mailer baseline, AssetMapper, Stimulus, PHPUnit, PHPStan, and coding-standard tooling.
 
 ## Requirements
 
@@ -85,3 +85,8 @@ php bin/console doctrine:schema:validate
 php bin/phpunit
 vendor\bin\phpstan analyse
 ```
+
+## Symfony 7.4 LTS migration
+
+The upgrade branch is not ready for reuse until its lockfile is regenerated and validation passes.
+See [the upgrade checklist](docs/upgrades/symfony-7.4.md) for completion gates.
