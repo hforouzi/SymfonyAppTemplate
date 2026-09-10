@@ -6,5 +6,6 @@
 /vendor/
 /var/
 /config/secrets/*/*.decrypt.private.php
+/config/reference.php
 /public/assets/css/style.css.map
 /_reference/

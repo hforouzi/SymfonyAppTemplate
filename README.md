@@ -1,10 +1,10 @@
 # Symfony App Template
 
-Reusable Symfony browser-admin template with database-backed users, roles, permissions, dynamic menus, settings, Twig admin layouts, localization, Messenger, HttpClient, Mailer baseline, AssetMapper, Stimulus, PHPUnit, PHPStan, and coding-standard tooling.
+Reusable Symfony 7.4 LTS browser-admin template with database-backed users, roles, permissions, dynamic menus, settings, Twig admin layouts, localization, Messenger, HttpClient, Mailer baseline, AssetMapper, Stimulus, PHPUnit, PHPStan, and coding-standard tooling.
 
 ## Requirements
 
-- PHP 8.2+
+- PHP 8.2+ (Composer is pinned to resolve dependencies against PHP 8.2)
 - Composer
 - MySQL or MariaDB
 - Symfony CLI optional
@@ -22,7 +22,7 @@ Copy `.env.example` to your local override if needed and set:
 
 ```dotenv
 APP_SECRET=change-me
-DATABASE_URL="mysql://db_user:db_password@127.0.0.1:3306/symfony_app?serverVersion=mariadb-10.8.3&charset=utf8mb4"
+DATABASE_URL="mysql://db_user:db_password@127.0.0.1:3306/symfony_app?serverVersion=10.8.3-MariaDB&charset=utf8mb4"
 MAILER_DSN=null://null
 MESSENGER_TRANSPORT_DSN=doctrine://default?auto_setup=0
 ```
@@ -77,10 +77,16 @@ Key browser paths:
 ## Checks
 
 ```powershell
-composer validate
+composer validate --strict
+composer check-platform-reqs
+composer audit
 php bin/console cache:clear
+php bin/console assets:install public
+php bin/console importmap:install
 php bin/console lint:yaml config
 php bin/console lint:twig templates
+php bin/console lint:container
+php bin/console doctrine:migrations:migrate
 php bin/console doctrine:schema:validate
 php bin/phpunit
 vendor\bin\phpstan analyse
@@ -88,5 +94,4 @@ vendor\bin\phpstan analyse
 
 ## Symfony 7.4 LTS migration
 
-The upgrade branch is not ready for reuse until its lockfile is regenerated and validation passes.
-See [the upgrade checklist](docs/upgrades/symfony-7.4.md) for completion gates.
+This template targets Symfony 7.4 LTS. The completed upgrade notes and validation record are in [the upgrade checklist](docs/upgrades/symfony-7.4.md).

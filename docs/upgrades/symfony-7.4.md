@@ -1,68 +1,92 @@
-# Symfony 7.4 LTS upgrade — completion checklist
+# Symfony 7.4 LTS upgrade validation
 
-Status: dependency constraints prepared; dependency resolution and runtime validation pending.
-Do not merge or use this branch to generate a new project until all gates below pass.
-The existing composer.lock still describes the previous dependency set.
+Status: dependency resolution and essential validation completed on the `chore/symfony-7.4-lts` branch.
 
 ## Scope
 
-Target Symfony 7.4 LTS while retaining PHP 8.2+ and the template's existing Doctrine,
-Twig, database-backed authorization, dynamic menus, and DE/EN localization.
-PackPilot-specific code belongs in a separate derived repository.
+The reusable template now targets Symfony 7.4 LTS while retaining PHP 8.2 compatibility, Doctrine ORM/DBAL with MySQL/MariaDB, Twig/Vristo admin templates, database-backed users, roles, permissions, dynamic menus, authentication, and German/English localization.
 
-## Resolve dependencies on this branch
+PackPilot-specific code remains out of scope for this branch.
 
-Use PHP 8.2+ with the application's required extensions, Composer 2, network access,
-and a dedicated disposable MariaDB/MySQL database. Never use another application's database.
+## Dependency resolution
+
+Composer resolution was performed with Symfony constrained to `7.4.*`:
 
 ```sh
 composer update "symfony/*" --with-all-dependencies --no-scripts
+composer update "symfony/*" doctrine/instantiator --with-all-dependencies --no-scripts
+```
+
+The second command was required after adding a Composer platform pin for PHP 8.2. Without the platform pin, resolving on PHP 8.4 selected `doctrine/instantiator` 2.1.0, which requires PHP 8.4 and would break PHP 8.2 installs. The committed lockfile resolves `doctrine/instantiator` 2.0.0 and remains compatible with PHP 8.2.
+
+Composer config now includes:
+
+```json
+"platform": {
+  "php": "8.2.0"
+}
+```
+
+Symfony Flex added the Symfony 7.3+ `symfony/property-info` recipe file at `config/packages/property_info.yaml`.
+
+## Application changes
+
+- Regenerated `composer.lock` for Symfony 7.4 LTS.
+- Added `config/packages/property_info.yaml` from the Symfony Flex recipe.
+- Added a Doctrine migration to update Messenger Doctrine transport indexes to the Symfony 7.4 schema.
+- Set `framework.profiler.collect_serializer_data` explicitly in test config to avoid the Symfony 7.3+ profiler deprecation.
+- Removed the obsolete DoctrineBundle `report_fields_where_declared` setting.
+- Updated MariaDB example URLs to use the current `10.8.3-MariaDB` server version format.
+
+## Validation results
+
+Validated on PHP 8.4.20 unless noted:
+
+```sh
 composer validate --strict
 composer check-platform-reqs
 composer audit
 php bin/console cache:clear
 php bin/console assets:install public
 php bin/console importmap:install
+php bin/console lint:yaml config
+php bin/console lint:twig templates
+php bin/console lint:container
+php bin/phpunit
+php bin/console cache:clear --env=prod --no-debug
 ```
 
-If resolution fails, inspect the reported package constraints and make the smallest
-compatible change. Do not ignore platform requirements or security advisories.
-Commit the Composer-generated composer.lock. Review any symfony.lock or recipe changes;
-do not overwrite application-specific configuration with recipe defaults.
+All commands above passed after the compatibility fixes.
 
-## Validate
+Database validation used disposable local databases:
 
-Configure local environment overrides and a separate test DATABASE_URL.
-Run migrations against disposable development and test databases before schema checks
-and database-dependent tests.
+```sh
+symfony_app_template_74_dev
+symfony_app_template_74_test_test
+```
+
+The following passed against those disposable databases:
 
 ```sh
 php bin/console doctrine:migrations:migrate --no-interaction
 php bin/console doctrine:schema:validate
 php bin/console doctrine:migrations:migrate --env=test --no-interaction
-php bin/console lint:yaml config
-php bin/console lint:twig templates
-php bin/console lint:container
-php bin/phpunit
-vendor/bin/phpstan analyse
-php bin/console cache:clear --env=prod --no-debug
+php bin/console doctrine:schema:validate --env=test
 ```
 
-Test PHP 8.2 and the intended production PHP version.
-Review Symfony 7.3 and 7.4 upgrade/deprecation guidance as this upgrade crosses both minors.
-Investigate failures against the main-branch baseline to distinguish existing issues
-from upgrade regressions.
+PHP 8.2 compatibility was checked with PHP 8.2.8 after pinning Composer's platform to PHP 8.2 and regenerating the lockfile. On PHP 8.2.8, `vendor/composer/platform_check.php`, `php bin/console about`, and `php bin/phpunit` passed.
 
-Browser acceptance: login/logout; anonymous dashboard redirect; active/inactive users;
-database roles and denied permissions (including JSON 403 responses); dynamic menus;
-settings; German/English switching; and the existing admin layout/assets.
+## Known limitations
 
-## Reproducibility gate
+`vendor/bin/phpstan analyse` still reports 105 findings. The same 105 findings reproduce on `origin/main`, so they are pre-existing static-analysis debt rather than Symfony 7.4 upgrade regressions.
 
-In a fresh checkout with no vendor directory, run composer install from the committed
-lockfile and repeat the checks. Record actual commands and outcomes in the PR before
-marking it ready for review. A changed composer.json alone is not a completed upgrade.
+`composer run quality` still fails before PHPStan/tests because `php-cs-fixer` is not installed or available on PATH. This is also unrelated to the Symfony dependency upgrade.
 
-Official references:
+Production cache clear on PHP 8.4 can still log Doctrine lazy-object deprecations because DoctrineBundle requires native lazy objects on PHP 8.4+, while enabling `enable_native_lazy_objects` unconditionally would break PHP 8.2. The template keeps the PHP 8.2-safe default.
+
+Browser flows were not manually exercised in a real browser in this environment. Covered automated smoke checks include login page accessibility, anonymous dashboard redirect, and the dashboard route.
+
+## Official references
+
 - https://symfony.com/releases/7.4
 - https://symfony.com/doc/7.4/setup/upgrade_minor.html
